@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>GD Practice Room</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%2317725C%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a round table seen from above — seats around a felt centre, live transcript beside it, controls docked below. */
+:root{
+  --bg:#EEF2EF; --surface:#FFFFFF; --sunk:#E3E9E5; --ink:#15201C; --muted:#5A6862; --line:#D3DBD6;
+  --accent:#17725C; --accent-ink:#FFFFFF; --felt:#1E5B4B; --felt-ink:#EAF4F0;
+  --a1:#D4500F; --a2:#2257D6; --a3:#8A3FD1; --mod:#6B7570;
+  --good:#167C3A; --good-bg:#DDF3E4; --bad:#B42318; --bad-bg:#FBE3E0; --warn:#A15C07;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1513; --surface:#16201D; --sunk:#1C2925; --ink:#E6EDEA; --muted:#93A39C; --line:#2B3833;
+  --accent:#4DBA98; --accent-ink:#06231B; --felt:#173F35; --felt-ink:#D9EEE6;
+  --a1:#FF8F5C; --a2:#7FA6FF; --a3:#C39BFF; --mod:#9AA6A0;
+  --good:#5AD584; --good-bg:#12301F; --bad:#FF8577; --bad-bg:#3A1714; --warn:#F2B254; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1513; --surface:#16201D; --sunk:#1C2925; --ink:#E6EDEA; --muted:#93A39C; --line:#2B3833;
+  --accent:#4DBA98; --accent-ink:#06231B; --felt:#173F35; --felt-ink:#D9EEE6;
+  --a1:#FF8F5C; --a2:#7FA6FF; --a3:#C39BFF; --mod:#9AA6A0;
+  --good:#5AD584; --good-bg:#12301F; --bad:#FF8577; --bad-bg:#3A1714; --warn:#F2B254; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 16px 40px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(28px,4.5vw,42px);font-weight:800;line-height:1.05}
+h2{font-size:22px;font-weight:700}
+h3{font-size:15px;font-weight:700}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn{background:var(--accent);color:var(--accent-ink);padding:12px 20px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.small{padding:7px 12px;font-size:14px}
+input[type=text],textarea,select{font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+textarea{resize:vertical}
+.banner{border-radius:10px;padding:10px 14px;font-size:14px;background:var(--sunk);border:1px solid var(--line)}
+.banner.err{background:var(--bad-bg);border-color:transparent;color:var(--bad)}
+
+/* ---------- Setup ---------- */
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.setup{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:600;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--sunk);color:var(--ink);padding:7px 12px;border-radius:999px;font-size:14px;border:1.5px solid transparent;text-align:left}
+.chip[aria-pressed=true]{border-color:var(--accent);background:var(--surface);color:var(--accent);font-weight:600}
+.chip .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-right:6px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>.field{flex:1 1 140px}
+.seg{display:flex;background:var(--sunk);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;background:transparent;color:var(--ink);padding:8px 10px;font-weight:600;font-size:14px;border-radius:8px}
+.seg button[aria-pressed=true]{background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.agentlist{display:flex;flex-direction:column;gap:12px}
+.agent{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:start}
+.agent.off{opacity:.4}
+.av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;color:#fff;font-size:17px;background:var(--c)}
+.agent p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+.how{margin:0;padding-left:18px;font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+
+/* ---------- Room ---------- */
+.roomhead{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.roomhead .t{min-width:0;flex:1 1 300px}
+.roomhead h2{font-size:clamp(20px,3vw,28px)}
+.clock{font-family:var(--f-mono);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;padding:6px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.clock.low{color:var(--bad)}
+.room{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.stage{display:grid;grid-template-columns:1fr 1.4fr 1fr;grid-template-rows:auto auto auto;gap:10px;align-items:center;justify-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 10px}
+.table{grid-column:2;grid-row:2;width:100%;aspect-ratio:1.25;max-width:100%;border-radius:50%;background:var(--felt);color:var(--felt-ink);display:grid;place-items:center;text-align:center;padding:14%;font-family:var(--f-display);font-weight:600;font-size:clamp(12px,1.6vw,15px);line-height:1.25;box-shadow:inset 0 0 0 6px color-mix(in srgb,var(--felt) 70%,#000)}
+.seat{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;min-width:0}
+.seat .av{width:58px;height:58px;font-size:22px;position:relative;transition:transform .2s}
+.seat .nm{font-weight:700;font-size:14px}
+.seat .tg{font-size:12px;color:var(--muted)}
+.seat .st{font-size:12px;color:var(--muted);min-height:18px;font-style:italic}
+.seat.speaking .av{transform:scale(1.08);box-shadow:0 0 0 4px var(--bg),0 0 0 7px var(--c)}
+.seat.speaking .av::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--c);animation:ring 1.3s ease-out infinite}
+.seat.thinking .av{opacity:.75}
+@keyframes ring{from{opacity:.8;transform:scale(.85)}to{opacity:0;transform:scale(1.25)}}
+@media (prefers-reduced-motion:reduce){.seat.speaking .av::after{animation:none;opacity:.6}}
+#seat-aarav{grid-column:1;grid-row:2}
+#seat-meera{grid-column:2;grid-row:1}
+#seat-kabir{grid-column:3;grid-row:2}
+#seat-you{grid-column:2;grid-row:3}
+.feed{background:var(--surface);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-width:0;height:min(520px,62vh)}
+.feed header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.msgs{overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px;flex:1}
+.msg{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px}
+.msg .av{width:30px;height:30px;font-size:13px}
+.msg .who{font-weight:700;font-size:13px;color:var(--c)}
+.msg .txt{font-size:15px;overflow-wrap:anywhere}
+.msg.mod .txt{color:var(--muted);font-style:italic}
+.msg.you .txt{background:var(--sunk);border-radius:4px 10px 10px 10px;padding:6px 10px}
+.msg.live .txt{opacity:.65}
+.cut{font-size:11px;color:var(--muted);margin-left:6px;font-weight:500}
+.empty{color:var(--muted);font-size:14px;margin:auto;text-align:center;max-width:30ch}
+.dock{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.dockrow{display:flex;gap:10px;align-items:center}
+.mic{flex:0 0 auto;width:64px;height:64px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.mic svg{width:28px;height:28px}
+.mic.on{background:var(--bad);color:#fff;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--bad) 25%,transparent)}}
+@media (prefers-reduced-motion:reduce){.mic.on{animation:none}}
+.typebox{flex:1;display:flex;gap:8px;min-width:0}
+#typeIn.dictating{border-color:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 20%,transparent)}
+.status{font-size:14px;color:var(--muted);min-height:21px}
+.status b{color:var(--ink)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+details.notes summary{cursor:pointer;font-size:14px;font-weight:600}
+details.notes textarea{margin-top:8px}
+.closing{border:2px dashed var(--accent);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+
+/* ---------- Prep / Eval ---------- */
+.center{min-height:60vh;display:grid;place-items:center;text-align:center}
+.center .inner{max-width:640px;display:flex;flex-direction:column;gap:16px;align-items:center}
+.bigtopic{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,5vw,44px);line-height:1.1;text-wrap:balance}
+.count{font-family:var(--f-mono);font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)}
+.dots{display:flex;gap:8px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:b 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{transform:translateY(-8px);opacity:.5}}
+
+/* ---------- Result ---------- */
+.result{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px;align-items:start}
+.verdict{border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.verdict.yes{background:var(--good-bg);color:var(--good)}
+.verdict.no{background:var(--bad-bg);color:var(--bad)}
+.stamp{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,5vw,46px);line-height:1;letter-spacing:.02em;border:4px solid currentColor;border-radius:10px;padding:8px 14px;align-self:flex-start;transform:rotate(-3deg)}
+.verdict .line{color:var(--ink);font-size:17px;font-weight:500}
+.score{font-family:var(--f-mono);font-weight:700;font-size:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .v{font-family:var(--f-mono);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:120px minmax(0,1fr) 36px;gap:10px;align-items:center;font-size:14px}
+.bar .track{height:10px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:99px}
+.bar .fill.lo{background:var(--bad)} .bar .fill.mid{background:var(--warn)}
+.bar .n{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+ul.list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.phr{display:flex;flex-direction:column;gap:10px}
+.phr div{border-left:3px solid var(--line);padding-left:12px;font-size:15px}
+.phr s{color:var(--muted)}
+.phr b{color:var(--accent)}
+.hist{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.hist div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.hist span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+@media (max-width:820px){
+  .setup,.room,.result{grid-template-columns:minmax(0,1fr)}
+  .feed{height:380px}
+  .seat .av{width:46px;height:46px;font-size:18px}
+  .bar{grid-template-columns:96px minmax(0,1fr) 30px}
+}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ================= SETUP ================= -->
+<section id="v-setup">
+  <div class="top">
+    <div>
+      <div class="eyebrow">Placement prep · Group discussion</div>
+      <h1>GD Practice Room</h1>
+      <p class="muted" style="margin:6px 0 0;max-width:60ch">Sit at the table with AI candidates, speak your points out loud, and get a panel verdict on whether you'd be shortlisted.</p>
+    </div>
+  </div>
+  <div id="sampleWarn" class="banner err" hidden style="margin-bottom:16px">Can't reach the server. Check that the app is running, then reload.</div>
+  <div class="setup">
+    <div class="panel">
+      <div class="field">
+        <label for="inName">Your name (the panel and agents will address you by it)</label>
+        <input id="inName" type="text" value="Shiv" maxlength="30" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Pick a topic</label>
+        <div class="chips" id="topicChips"></div>
+      </div>
+      <div class="field" id="pwField" hidden>
+        <label for="inPw">Access password</label>
+        <input id="inPw" type="password" autocomplete="current-password" placeholder="Ask the person who shared this link">
+      </div>
+      <div class="field">
+        <label for="inTopic">Or type your own</label>
+        <input id="inTopic" type="text" placeholder="e.g. Is cryptocurrency the future of money?" autocomplete="off">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Duration</label>
+          <div class="seg" id="segDur"><button data-v="5">5 min</button><button data-v="8" aria-pressed="true">8 min</button><button data-v="12">12 min</button></div>
+        </div>
+        <div class="field">
+          <label>Other candidates</label>
+          <div class="seg" id="segCount"><button data-v="2">2 agents</button><button data-v="3" aria-pressed="true">3 agents</button></div>
+        </div>
+        <div class="field">
+          <label>Prep time</label>
+          <div class="seg" id="segPrep"><button data-v="0">None</button><button data-v="60" aria-pressed="true">1 min</button></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>How you'll speak</label>
+        <div class="seg" id="segVoice"><button data-v="mic">Browser mic (recommended)</button><button data-v="dict">System dictation</button></div>
+        <div class="banner" id="voiceHelp" style="margin-top:4px"></div>
+        <div class="row" style="align-items:center;gap:10px"><button class="btn ghost small" id="btnMicTest" type="button">Test browser mic</button><span class="muted" id="micTestOut" style="font-size:14px"></span></div>
+      </div>
+      <div class="row" style="align-items:center">
+        <button class="btn" id="btnStart">Enter the GD room</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Your panel</h2>
+      <div class="agentlist" id="agentList"></div>
+      <div>
+        <h3 style="margin-bottom:6px">How it runs</h3>
+        <ul class="how">
+          <li>The moderator reads the topic. Speaking first earns initiative points.</li>
+          <li>Agents talk in turn. Press the mic (or Space) any time to cut in; press again when done.</li>
+          <li>When time is up, offer a summary, then the panel scores you and decides: selected or not.</li>
+          <li>Best in Chrome or Edge, where the browser mic works. In other browsers, use System dictation: press the mic, then your OS dictation key, and talk.</li>
+        </ul>
+      </div>
+      <div id="histWrap" hidden>
+        <h3 style="margin-bottom:6px">Your recent GDs</h3>
+        <div class="hist" id="hist"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PREP ================= -->
+<section id="v-prep" hidden>
+  <div class="center"><div class="inner">
+    <div class="eyebrow">Your topic</div>
+    <div class="bigtopic" id="prepTopic"></div>
+    <div class="count" id="prepCount">60</div>
+    <textarea id="notes" rows="4" placeholder="Jot 2–3 points: your stand, one example, one counter-point…" style="max-width:520px"></textarea>
+    <button class="btn" id="btnSkipPrep">I'm ready, start the GD</button>
+  </div></div>
+</section>
+
+<!-- ================= ROOM ================= -->
+<section id="v-room" hidden>
+  <div class="roomhead">
+    <div class="t"><div class="eyebrow">Topic</div><h2 id="roomTopic"></h2></div>
+    <div class="clock" id="clock">8:00</div>
+  </div>
+  <div class="room">
+    <div class="stage" id="stage">
+      <div class="table" id="tableTopic"></div>
+    </div>
+    <div class="feed">
+      <header><h3>Discussion</h3><span class="muted" style="font-size:13px" id="feedMeta"></span></header>
+      <div class="msgs" id="msgs"><p class="empty" id="emptyFeed">The floor opens after the moderator speaks.</p></div>
+    </div>
+  </div>
+  <div class="dock">
+    <div id="errBanner" class="banner err" hidden></div>
+    <div id="micNote" class="banner" hidden></div>
+    <div class="closing" id="closing" hidden>
+      <h3>Time's up. Want to summarise the discussion?</h3>
+      <p class="muted" style="margin:0;font-size:14px">A crisp 30-second summary of both sides is a strong closing signal. Use the mic or type it, then get your result.</p>
+      <div class="row"><button class="btn" id="btnResult">Get my result</button></div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="dockrow">
+      <button class="mic" id="btnMic" aria-label="Start speaking" title="Speak (Space)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>
+      </button>
+      <form class="typebox" id="typeForm">
+        <input id="typeIn" type="text" placeholder="Press the mic to speak, or type your point and press Enter" autocomplete="off">
+        <button class="btn" type="submit">Say</button>
+      </form>
+    </div>
+    <div class="tools">
+      <details class="notes"><summary>My prep notes</summary><textarea id="notes2" rows="3"></textarea></details>
+      <div class="row" style="gap:8px;align-items:center">
+        <label style="font-size:14px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="autoSend" checked> Auto-send after pause</label>
+        <button class="btn ghost small" id="btnMute">Mute agents' voices</button>
+        <button class="btn ghost small" id="btnEnd">End GD now</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EVAL ================= -->
+<section id="v-eval" hidden>
+  <div class="center"><div class="inner">
+    <div class="dots"><i></i><i></i><i></i></div>
+    <h2>The panel is deliberating…</h2>
+    <p class="muted">Reviewing what you said, how you entered, and how you handled the others. This takes up to a minute.</p>
+    <div id="evalErr" class="banner err" hidden></div>
+    <button class="btn" id="btnRetryEval" hidden>Try again</button>
+  </div></div>
+</section>
+
+<!-- ================= RESULT ================= -->
+<section id="v-result" hidden>
+  <div class="top">
+    <div><div class="eyebrow">Panel decision</div><h1 id="resTopic"></h1></div>
+    <div class="row" style="gap:8px">
+      <button class="btn" id="btnAgain">Another GD, same setup</button>
+      <button class="btn ghost" id="btnSetup">Change setup</button>
+    </div>
+  </div>
+  <div class="result">
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div class="verdict" id="verdict"></div>
+      <div class="stats" id="stats"></div>
+      <div class="panel"><h3>Scorecard</h3><div class="bars" id="bars"></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+      <div class="panel"><h3>What worked</h3><ul class="list" id="strengths"></ul></div>
+      <div class="panel"><h3>Fix before the next GD</h3><ul class="list" id="improve"></ul></div>
+      <div class="panel"><h3>Say it better</h3><div class="phr" id="phrases"></div></div>
+      <div class="panel">
+        <div class="tools"><h3>Full transcript</h3><button class="btn ghost small" id="btnCopy">Copy transcript</button></div>
+        <div class="msgs" id="resMsgs" style="max-height:360px;padding:0"></div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const TOPICS = [
+  ["Tech","Should AI tools be allowed in college exams?"],
+  ["Work","Work from home is here to stay"],
+  ["Career","Is a degree still necessary for a good job?"],
+  ["Career","Startup or MNC: where should a fresher begin?"],
+  ["Policy","India should adopt a four-day work week"],
+  ["Economy","Gig economy: freedom or exploitation?"],
+  ["Society","Social media does more harm than good"],
+  ["Policy","Is India ready for electric vehicles?"],
+  ["Abstract","Zero"],
+  ["Abstract","Red is better than blue"]
+];
+const AGENTS = [
+  {id:"aarav", name:"Aarav", tag:"The Initiator", c:"var(--a1)", w:1.2,
+   persona:"Confident and quick to take the floor. Backs points with numbers and real examples from India and abroad. Makes bold claims and can dominate if nobody checks him.",
+   pitch:0.85, rate:1.06},
+  {id:"meera", name:"Meera", tag:"The Bridge", c:"var(--a2)", w:1.0,
+   persona:"Calm and structured. Builds on others ('Adding to what Aarav said…'), connects points, brings the group back on track, and invites quieter people to speak.",
+   pitch:1.2, rate:1.0},
+  {id:"kabir", name:"Kabir", tag:"The Contrarian", c:"var(--a3)", w:1.0,
+   persona:"Sharp devil's advocate. Challenges weak or vague arguments, asks for evidence, argues the other side, and sometimes cuts in with 'But wait…'.",
+   pitch:1.0, rate:1.12}
+];
+const YOU = {id:"you", tag:"Candidate", c:"var(--accent)"};
+const MOD = {id:"mod", name:"Moderator", c:"var(--mod)"};
+
+let S = {name:"Shiv", topic:TOPICS[0][1], minutes:8, count:3, prep:60};
+let G = null;              // live game state
+let server = null;
+let muted = false;
+
+/* ---------- Server access ---------- */
+const PW_KEY = "gdroom.pw";
+const serverReady = (async () => {
+  try {
+    const r = await fetch("/api/health"); server = await r.json();
+    if (server.password){
+      $("pwField").hidden = false;
+      try { $("inPw").value = localStorage.getItem(PW_KEY) || ""; } catch {}
+    }
+  } catch { server = null; $("sampleWarn").hidden = false; }
+  return server;
+})();
+class ApiError extends Error { constructor(code, msg){ super(msg); this.code = code; } }
+async function api(path, body, signal){
+  let r;
+  try {
+    r = await fetch(path, {method:"POST", signal, headers:{"content-type":"application/json", "x-app-password": $("inPw").value || ""}, body: JSON.stringify(body)});
+  } catch (e) {
+    if (e.name === "AbortError") throw new ApiError("cancelled", "cancelled");
+    throw new ApiError("network", "Couldn't reach the server.");
+  }
+  let data = {}; try { data = await r.json(); } catch {}
+  if (!r.ok){
+    const code = r.status === 401 ? "bad_password" : r.status === 429 ? "rate_limited" : "upstream_error";
+    throw new ApiError(code, data.error || ("Server error " + r.status));
+  }
+  return data;
+}
+function turnsForApi(){
+  return G.turns.map(t => ({name: t.name.slice(0,40), text: t.text.slice(0,2000), cut: !!t.cut,
+    role: t.id === "you" ? "you" : t.id === "mod" ? "mod" : "agent"}));
+}
+
+/* ---------- Setup UI ---------- */
+function renderChips(){
+  const box = $("topicChips"); box.innerHTML = "";
+  TOPICS.forEach(([k,t]) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button";
+    b.setAttribute("aria-pressed", String(!$("inTopic").value.trim() && S.topic === t));
+    const kk = document.createElement("span"); kk.className = "k"; kk.textContent = k;
+    b.append(kk, t);
+    b.onclick = () => { S.topic = t; $("inTopic").value = ""; renderChips(); };
+    box.append(b);
+  });
+}
+function seg(id, key){
+  const el = $(id);
+  el.querySelectorAll("button").forEach(b => b.onclick = () => {
+    el.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed","false"));
+    b.setAttribute("aria-pressed","true"); S[key] = Number(b.dataset.v);
+    if (key === "count") renderAgentList();
+  });
+}
+function avatar(p, label){
+  const a = document.createElement("div"); a.className = "av"; a.style.setProperty("--c", p.c);
+  a.textContent = (label || p.name || "?")[0].toUpperCase(); return a;
+}
+function renderAgentList(){
+  const box = $("agentList"); box.innerHTML = "";
+  AGENTS.forEach((a,i) => {
+    const d = document.createElement("div"); d.className = "agent" + (i >= S.count ? " off" : "");
+    const t = document.createElement("div");
+    const h = document.createElement("h3"); h.textContent = `${a.name} · ${a.tag}`;
+    const p = document.createElement("p"); p.textContent = a.persona;
+    t.append(h,p); d.append(avatar(a), t); box.append(d);
+  });
+}
+$("inTopic").addEventListener("input", renderChips);
+seg("segDur","minutes"); seg("segCount","count"); seg("segPrep","prep");
+renderChips(); renderAgentList(); renderHistory();
+setTimeout(() => setMode(mode), 0);
+
+/* ---------- Voices (text to speech) ---------- */
+let VOICES = [];
+function loadVoices(){
+  if (!("speechSynthesis" in window)) return;
+  const all = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+  const rank = v => (/en-IN/i.test(v.lang) ? 0 : /en-GB/i.test(v.lang) ? 1 : /en-US/i.test(v.lang) ? 2 : 3);
+  VOICES = all.sort((a,b) => rank(a) - rank(b));
+  const pool = VOICES.length ? VOICES : [null];
+  [...AGENTS, MOD].forEach((p,i) => { p.voice = pool[i % pool.length]; });
+}
+if ("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+
+let curFin = null;
+function speak(text, who){
+  return new Promise(res => {
+    const words = text.split(/\s+/).length;
+    let done = false, timer;
+    const fin = () => { if (done) return; done = true; clearTimeout(timer); curFin = null; res(); };
+    curFin = fin;
+    if (muted || !("speechSynthesis" in window)) { timer = setTimeout(fin, 800 + words * 280); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    if (who.voice) { u.voice = who.voice; u.lang = who.voice.lang; } else u.lang = "en-IN";
+    u.pitch = who.pitch || 1; u.rate = who.rate || 1;
+    u.onend = fin; u.onerror = fin;
+    timer = setTimeout(fin, 4000 + words * 600);
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  });
+}
+function stopSpeech(){ try { speechSynthesis.cancel(); } catch {} if (curFin) curFin(); }
+
+/* ---------- Voice input ----------
+   Two modes. "Browser mic" uses the browser's speech recognition (Chrome/Edge). Where that's missing
+   or fails, we fall back to "Dictation": the OS dictation (Win+H / Fn Fn)
+   types into the box and we auto-send after a short pause. */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const IS_MAC = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
+const DICT_KEY = IS_MAC ? "press <b>Fn</b> twice (or 🎤 key)" : "press <b>Win + H</b>";
+const DICT_KEY_TXT = IS_MAC ? "press Fn twice" : "press Win + H";
+let rec = null, micOn = false, finalTxt = "", liveEl = null, gotAudio = false, restarts = 0, watchdog = null;
+let mode = (() => { try { return localStorage.getItem("gdroom.voice") || (SR ? "mic" : "dict"); } catch { return SR ? "mic" : "dict"; } })();
+let autoSend = true, idleTimer = null, idleTick = null;
+const FATAL = e => e !== "no-speech" && e !== "aborted";
+
+function setMode(m, reason){
+  mode = m; try { localStorage.setItem("gdroom.voice", m); } catch {}
+  document.querySelectorAll("#segVoice button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === m)));
+  renderVoiceHelp(reason);
+}
+function renderVoiceHelp(reason){
+  const h = $("voiceHelp"), n = $("micNote");
+  const dictMsg = `<b>Dictation mode.</b> Press the mic button below, then ${DICT_KEY} and just talk. Your words appear in the box and are sent automatically after a 3-second pause (or press Enter).`;
+  if (mode === "dict"){
+    h.innerHTML = (reason ? `<b>${reason}</b> ` : "") + `You'll speak through your computer's dictation: in the room, press the mic, then ${DICT_KEY} and talk. It's still voice, it just goes through your OS.`;
+    n.innerHTML = (reason ? `<b>${reason}</b> ` : "") + dictMsg; n.hidden = false;
+  } else {
+    h.innerHTML = `Uses the browser's speech recognition. If it doesn't hear you, switch to System dictation.`;
+    n.hidden = true;
+  }
+  $("btnMic").title = mode === "dict" ? "Dictate (then " + DICT_KEY_TXT + ")" : "Speak (Space)";
+}
+document.querySelectorAll("#segVoice button").forEach(b => b.onclick = () => setMode(b.dataset.v));
+$("autoSend").addEventListener("change", e => { autoSend = e.target.checked; });
+
+function fallbackToDictation(why){
+  if (rec) { try { rec.onend = null; rec.abort(); } catch {} }
+  clearTimeout(watchdog);
+  micOn = false; setMicBtn(); removeLive();
+  setMode("dict", why || "The browser mic isn't available.");
+  startDictation();
+}
+
+$("btnMicTest").onclick = () => {
+  const out = $("micTestOut");
+  if (!SR) { setMode("dict", "This window has no speech recognition."); out.textContent = "Switched to system dictation."; return; }
+  out.textContent = "Listening… say a sentence.";
+  let ok = false;
+  const t = new SR(); t.lang = "en-IN"; t.interimResults = false;
+  const wd = setTimeout(() => { if (!ok){ try { t.abort(); } catch {} setMode("dict", "The browser mic didn't respond."); out.textContent = "Switched to system dictation."; } }, 7000);
+  t.onresult = e => { ok = true; clearTimeout(wd); out.textContent = "Heard: “" + e.results[0][0].transcript + "”. Browser mic works."; setMode("mic"); };
+  t.onerror = e => { clearTimeout(wd); if (FATAL(e.error)) { setMode("dict", "The browser mic is blocked here (" + e.error + ")."); out.textContent = "Switched to system dictation."; } else out.textContent = "Didn't catch anything. Try again and speak right away."; ok = true; };
+  try { t.start(); } catch { clearTimeout(wd); setMode("dict", "The browser mic couldn't start."); out.textContent = "Switched to system dictation."; }
+};
+
+function startMic(){
+  if (mode === "dict" || !SR) return startDictation();
+  takeFloor();
+  finalTxt = ""; micOn = true; gotAudio = false; restarts = 0; setMicBtn();
+  liveEl = addMsg(YOU, "Listening…", {live:true});
+  rec = new SR(); rec.lang = "en-IN"; rec.continuous = true; rec.interimResults = true;
+  rec.onaudiostart = () => { gotAudio = true; clearTimeout(watchdog); };
+  rec.onresult = e => {
+    gotAudio = true; restarts = 0;
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const r = e.results[i];
+      if (r.isFinal) finalTxt += r[0].transcript + " "; else interim += r[0].transcript;
+    }
+    if (liveEl) liveEl.querySelector(".txt").textContent = (finalTxt + interim).trim() || "Listening…";
+  };
+  rec.onerror = e => { if (FATAL(e.error) && micOn) fallbackToDictation("The browser mic failed (" + e.error + ")."); };
+  rec.onend = () => {
+    if (!micOn) return;
+    if (++restarts > 6) return fallbackToDictation("The browser mic keeps stopping.");
+    try { rec.start(); } catch { finishMic(); }
+  };
+  watchdog = setTimeout(() => { if (micOn && !gotAudio) fallbackToDictation("The browser mic didn't start."); }, 3500);
+  try { rec.start(); } catch { return fallbackToDictation("The browser mic couldn't start."); }
+  setStatus(`<b>You have the floor.</b> Press the mic again when you finish.`);
+}
+function finishMic(){
+  if (mode === "dict") return sendTyped();
+  micOn = false; setMicBtn(); clearTimeout(watchdog);
+  try { rec && rec.stop(); } catch {}
+  const live = liveEl ? liveEl.querySelector(".txt").textContent : "";
+  setTimeout(() => {   // let the last final result land
+    const text = (finalTxt.trim() || (live !== "Listening…" ? live : "")).trim();
+    removeLive(); commitUser(text);
+  }, 450);
+}
+function startDictation(){
+  takeFloor(); micOn = true; setMicBtn();
+  const inp = $("typeIn"); inp.classList.add("dictating"); inp.focus();
+  inp.placeholder = "Now " + DICT_KEY_TXT + " and speak…";
+  setStatus(`<b>You have the floor.</b> Now ${DICT_KEY} and speak. Sent after a 3-second pause, or press Enter / the mic.`);
+}
+function endDictationUI(){
+  micOn = false; setMicBtn(); clearTimeout(idleTimer); clearInterval(idleTick);
+  const inp = $("typeIn"); inp.classList.remove("dictating");
+  inp.placeholder = "Press the mic to speak, or type your point and press Enter";
+}
+function sendTyped(){
+  const v = $("typeIn").value.trim(); $("typeIn").value = "";
+  endDictationUI();
+  if (!G) return;
+  commitUser(v);
+}
+function removeLive(){ if (liveEl) { liveEl.remove(); liveEl = null; } }
+function setMicBtn(){
+  const b = $("btnMic"); b.classList.toggle("on", micOn);
+  b.setAttribute("aria-label", micOn ? "Finish speaking" : "Start speaking");
+  seatState("you", micOn ? "speaking" : "", micOn ? "speaking" : "");
+}
+$("btnMic").addEventListener("mousedown", e => e.preventDefault());   // keep focus in the box while dictating
+$("btnMic").onclick = () => { if (!G || G.phase === "done") return; micOn ? finishMic() : startMic(); };
+document.addEventListener("keydown", e => {
+  if (e.code !== "Space" || !G || $("v-room").hidden) return;
+  if (["INPUT","TEXTAREA","BUTTON","SELECT"].includes(document.activeElement.tagName)) return;
+  e.preventDefault(); micOn ? finishMic() : startMic();
+});
+
+/* typing / dictation box */
+$("typeIn").addEventListener("input", () => {
+  const v = $("typeIn").value.trim();
+  if (v && G && !G.floor) takeFloor();
+  if (v && !micOn && mode === "dict") { micOn = true; setMicBtn(); $("typeIn").classList.add("dictating"); }
+  clearTimeout(idleTimer); clearInterval(idleTick);
+  if (v && autoSend && mode === "dict"){
+    let n = 3;
+    setStatus(`Listening to you… sending in ${n}s unless you keep talking.`);
+    idleTick = setInterval(() => { n--; if (n > 0) setStatus(`Listening to you… sending in ${n}s unless you keep talking.`); }, 1000);
+    idleTimer = setTimeout(() => { clearInterval(idleTick); if ($("typeIn").value.trim()) sendTyped(); }, 3000);
+  }
+});
+$("typeIn").addEventListener("blur", () => { if (!$("typeIn").value.trim() && mode === "dict" && micOn) { /* keep floor briefly */ } else if (!$("typeIn").value.trim() && !micOn && G && G.floor) releaseFloor(); });
+$("typeForm").addEventListener("submit", e => { e.preventDefault(); sendTyped(); });
+
+/* ---------- Floor control ---------- */
+function takeFloor(){
+  if (!G) return;
+  if (!G.floor){
+    G.floor = true;
+    if (G.speaking) { G.interrupts++; const last = G.turns[G.turns.length-1]; if (last && last.id === G.speaking) last.cut = true; markCut(); }
+    stopSpeech();
+    if (G.abort) G.abort.abort();
+  }
+}
+function releaseFloor(){ if (G) G.floor = false; }
+function commitUser(text){
+  if (!G) return;
+  if (text && text.length > 1){
+    addTurn(YOU, text);
+    if (G.phase === "closing") G.summarised = true;
+    if (!G.opened) G.opened = "you";
+  }
+  releaseFloor();
+  if (G.phase === "live") setStatus("Others are responding… press the mic to come back in.");
+}
+
+/* ---------- Room rendering ---------- */
+function buildStage(){
+  const st = $("stage");
+  st.querySelectorAll(".seat").forEach(s => s.remove());
+  const people = [...G.agents, {...YOU, name:S.name}];
+  people.forEach(p => {
+    const s = document.createElement("div"); s.className = "seat"; s.id = "seat-" + p.id; s.style.setProperty("--c", p.c);
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = p.id === "you" ? p.name + " (you)" : p.name;
+    const tg = document.createElement("div"); tg.className = "tg"; tg.textContent = p.tag;
+    const stt = document.createElement("div"); stt.className = "st";
+    s.append(avatar(p), nm, tg, stt); st.append(s);
+  });
+  if (G.agents.length === 2){   // two agents sit left and right
+    const m = $("seat-meera"); if (m){ m.style.gridColumn = "3"; m.style.gridRow = "2"; }
+  }
+}
+function seatState(id, cls, label){
+  const s = $("seat-" + id); if (!s) return;
+  s.classList.remove("speaking","thinking"); if (cls) s.classList.add(cls);
+  s.querySelector(".st").textContent = label || "";
+}
+function addMsg(p, text, opt = {}){
+  $("emptyFeed") && $("emptyFeed").remove();
+  const box = opt.box || $("msgs");
+  const m = document.createElement("div");
+  m.className = "msg" + (p.id === "mod" ? " mod" : "") + (p.id === "you" ? " you" : "") + (opt.live ? " live" : "");
+  m.style.setProperty("--c", p.c);
+  const body = document.createElement("div"); body.style.minWidth = "0";
+  const who = document.createElement("div"); who.className = "who";
+  who.textContent = p.id === "you" ? (S.name + " (you)") : p.name;
+  if (opt.cut){ const c = document.createElement("span"); c.className = "cut"; c.textContent = "cut off"; who.append(c); }
+  const tx = document.createElement("div"); tx.className = "txt"; tx.textContent = text;
+  body.append(who, tx); m.append(avatar(p.id === "you" ? {...p, name:S.name} : p), body);
+  box.append(m); box.scrollTop = box.scrollHeight;
+  return m;
+}
+function addTurn(p, text){
+  G.turns.push({id:p.id, name: p.id === "you" ? S.name : p.name, text, t: Date.now() - G.start, el: addMsg(p, text)});
+  $("feedMeta").textContent = G.turns.filter(t => t.id === "you").length + " of your turns";
+}
+function markCut(){
+  const last = G.turns[G.turns.length-1];
+  if (last && last.cut && last.el && !last.el.querySelector(".cut")){
+    const c = document.createElement("span"); c.className = "cut"; c.textContent = "cut off by you"; last.el.querySelector(".who").append(c);
+  }
+}
+function setStatus(html){ $("status").innerHTML = html; }
+function show(view){ ["setup","prep","room","eval","result"].forEach(v => $("v-" + v).hidden = v !== view); window.scrollTo(0,0); }
+
+/* ---------- Flow ---------- */
+$("btnStart").onclick = startGD;
+$("btnAgain").onclick = startGD;
+$("btnSetup").onclick = () => { show("setup"); renderHistory(); };
+
+async function startGD(){
+  S.name = $("inName").value.trim() || "Shiv";
+  const custom = $("inTopic").value.trim(); if (custom) S.topic = custom;
+  await serverReady;
+  if (!server){ $("sampleWarn").hidden = false; return; }
+  try { localStorage.setItem(PW_KEY, $("inPw").value); } catch {}
+  G = {phase:"prep", agents: AGENTS.slice(0, S.count), turns:[], floor:false, speaking:null, abort:null,
+       interrupts:0, opened:null, summarised:false, token:0, start:Date.now(), endAt:0};
+  $("msgs").innerHTML = '<p class="empty" id="emptyFeed">The floor opens after the moderator speaks.</p>';
+  $("roomTopic").textContent = S.topic; $("tableTopic").textContent = S.topic;
+  $("closing").hidden = true; $("errBanner").hidden = true; renderVoiceHelp(); endDictationUI();
+  buildStage();
+  const intro = `Good morning, everyone. Your topic for today's group discussion is: ${S.topic}${/[.?!]$/.test(S.topic) ? "" : "."} ` +
+    (S.prep ? `You have one minute to gather your thoughts. ` : ``) + `The discussion will run for ${S.minutes} minutes. Anyone may begin.`;
+  if (S.prep){
+    show("prep"); $("prepTopic").textContent = S.topic; $("notes").value = "";
+    speak(intro, MOD);
+    G.prepEnd = Date.now() + S.prep * 1000;
+    const tok = ++G.token;
+    while (Date.now() < G.prepEnd && G.token === tok){
+      $("prepCount").textContent = Math.ceil((G.prepEnd - Date.now())/1000);
+      await sleep(200);
+    }
+    if (G.token !== tok) return;
+    beginLive(false);
+  } else beginLive(true, intro);
+}
+$("btnSkipPrep").onclick = () => { if (G && G.phase === "prep"){ G.token++; stopSpeech(); beginLive(false); } };
+
+async function beginLive(sayIntro, intro){
+  show("room");
+  $("notes2").value = $("notes").value;
+  G.phase = "live";
+  if (sayIntro){ addTurn(MOD, intro); await speak(intro, MOD); }
+  else { const m = "Time to begin. The floor is open."; addTurn(MOD, m); await speak(m, MOD); }
+  G.start = Date.now(); G.endAt = Date.now() + S.minutes * 60000;
+  tick();
+  setStatus(`<b>The floor is open.</b> Speak first to open the GD — or Aarav will.`);
+  // give the candidate a few seconds to open
+  const t0 = Date.now();
+  while (Date.now() - t0 < 6000 && G.phase === "live"){ if (G.floor || G.turns.some(t => t.id === "you")) break; await sleep(150); }
+  agentLoop();
+}
+
+function tick(){
+  if (!G || G.phase !== "live") return;
+  const left = Math.max(0, G.endAt - Date.now());
+  const s = Math.ceil(left/1000);
+  $("clock").textContent = Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+  $("clock").classList.toggle("low", s <= 60);
+  if (left <= 0 && !G.floor) { endDiscussion(); return; }
+  setTimeout(tick, 250);
+}
+$("btnEnd").onclick = () => { if (G && G.phase === "live") endDiscussion(); };
+$("btnMute").onclick = () => {
+  muted = !muted; $("btnMute").textContent = muted ? "Unmute agents' voices" : "Mute agents' voices";
+  if (muted) try { speechSynthesis.cancel(); } catch {}
+};
+
+function pickNext(){
+  const lastAgent = [...G.turns].reverse().find(t => G.agents.some(a => a.id === t.id));
+  const lastTurn = G.turns[G.turns.length-1];
+  if (!G.turns.some(t => G.agents.some(a => a.id === t.id)) && !G.turns.some(t => t.id === "you")) return G.agents[0];
+  let pool = G.agents.filter(a => !lastAgent || a.id !== lastAgent.id);
+  // someone the last speaker named answers next
+  if (lastTurn){ const named = pool.find(a => new RegExp("\\b" + a.name + "\\b","i").test(lastTurn.text)); if (named && Math.random() < .7) return named; }
+  const weights = pool.map(a => a.w + (lastTurn && lastTurn.id === "you" && a.id === "kabir" ? .8 : 0));
+  let r = Math.random() * weights.reduce((x,y) => x+y, 0);
+  for (let i = 0; i < pool.length; i++){ r -= weights[i]; if (r <= 0) return pool[i]; }
+  return pool[0];
+}
+
+function agentRequest(agent){
+  const lastTurn = G.turns[G.turns.length-1];
+  let sinceUser = 0;
+  for (let i = G.turns.length-1; i >= 0 && G.turns[i].id !== "you"; i--) if (G.turns[i].id !== "mod") sinceUser++;
+  const userSpoke = G.turns.some(t => t.id === "you");
+  const agentTurns = G.turns.filter(t => G.agents.some(a => a.id === t.id)).length;
+  let cue = "react";
+  if (!userSpoke && agentTurns === 0) cue = "open";
+  else if (lastTurn && lastTurn.id === "you") cue = "reply_user";
+  else if (sinceUser >= 4 && (agent.id === "meera" || Math.random() < .4)) cue = "invite_user";
+  return {agent_id: agent.id, agents: G.agents.map(a => a.id), topic: S.topic.slice(0,200), name: S.name.slice(0,30),
+    transcript: turnsForApi().slice(-30), seconds_left: Math.max(0, Math.round((G.endAt - Date.now())/1000)), cue};
+}
+
+async function agentLoop(){
+  const my = ++G.token;
+  while (G && G.phase === "live" && my === G.token){
+    if (G.floor){ await sleep(250); continue; }
+    if (Date.now() >= G.endAt) { endDiscussion(); return; }
+    const agent = pickNext();
+    seatState(agent.id, "thinking", "about to speak…");
+    setStatus(`<b>${agent.name}</b> is about to speak. Press the mic to jump in first.`);
+    G.abort = new AbortController();
+    let text = "";
+    try {
+      const r = await api("/api/agent", agentRequest(agent), G.abort.signal);
+      text = (r.text || "").trim();
+    } catch (e){
+      seatState(agent.id, "", "");
+      if (e && e.code === "cancelled") continue;
+      return showLoopError(e);
+    }
+    seatState(agent.id, "", "");
+    if (!G || my !== G.token || G.floor || G.phase !== "live" || !text) continue;
+    addTurn(agent, text);
+    if (!G.opened) G.opened = agent.id;
+    G.speaking = agent.id;
+    seatState(agent.id, "speaking", "speaking");
+    setStatus(`<b>${agent.name}</b> is speaking. Jump in any time with the mic or Space.`);
+    await speak(text, agent);
+    G.speaking = null;
+    seatState(agent.id, "", "");
+    if (!G.floor) setStatus(`Floor is open for a moment… press the mic to come in.`);
+    await sleep(1100 + Math.random()*900);
+  }
+}
+function showLoopError(e){
+  const code = e && e.code;
+  const msg = code === "bad_password" ? "The access password is wrong. Go back to setup and enter the right one."
+    : code === "rate_limited" ? "Too many requests right now. Wait a minute, then resume."
+    : code === "network" ? "Lost connection to the server."
+    : "The other candidates lost connection for a moment" + (e && e.message ? " (" + e.message + ")." : ".");
+  const b = $("errBanner"); b.hidden = false; b.textContent = msg + " ";
+  const r = document.createElement("button"); r.className = "btn small";
+  if (code === "bad_password"){ r.textContent = "Back to setup"; r.onclick = () => { G.phase = "done"; stopSpeech(); show("setup"); }; }
+  else { r.textContent = "Resume discussion"; r.onclick = () => { b.hidden = true; agentLoop(); }; }
+  b.append(r);
+  setStatus("Discussion paused.");
+}
+
+async function endDiscussion(){
+  if (!G || G.phase !== "live") return;
+  G.phase = "closing"; G.token++;
+  if (G.abort) G.abort.abort(); stopSpeech();
+  G.agents.forEach(a => seatState(a.id, "", ""));
+  $("clock").textContent = "0:00";
+  const m = `Time's up, thank you all. Before we close, would anyone like to summarise? ${S.name}, would you like to take this?`;
+  addTurn(MOD, m);
+  $("closing").hidden = false;
+  setStatus(`<b>Your chance to summarise.</b> Press the mic or type, then get your result.`);
+  await speak(m, MOD);
+}
+$("btnResult").onclick = () => { const was = micOn || $("typeIn").value.trim(); if (was) finishMic(); setTimeout(evaluate, was ? 700 : 0); };
+
+/* ---------- Evaluation ---------- */
+const FILLER = /\b(um+|uh+|uhm+|erm+|hmm+|basically|actually|you know|i mean|kind of|sort of|like)\b/gi;
+function computeStats(){
+  const mine = G.turns.filter(t => t.id === "you");
+  const agentsT = G.turns.filter(t => G.agents.some(a => a.id === t.id));
+  const wc = s => (s.match(/\S+/g) || []).length;
+  const myWords = mine.reduce((n,t) => n + wc(t.text), 0);
+  const allWords = myWords + agentsT.reduce((n,t) => n + wc(t.text), 0);
+  const fillers = mine.reduce((n,t) => n + (t.text.match(FILLER) || []).length, 0);
+  const repeats = mine.reduce((n,t) => n + (t.text.match(/\b(\w+)(\s+\1\b)+/gi) || []).length, 0);
+  let invites = 0, answered = 0;
+  G.turns.forEach((t,i) => {
+    if (G.agents.some(a => a.id === t.id) && new RegExp("\\b" + S.name.split(" ")[0] + "\\b","i").test(t.text)){
+      invites++; if (G.turns[i+1] && G.turns[i+1].id === "you") answered++;
+    }
+  });
+  return {turns:mine.length, words:myWords, airtime: allWords ? Math.round(100*myWords/allWords) : 0,
+    fillers, repeats, interrupts:G.interrupts, opened:G.opened === "you", summarised:G.summarised, invites, answered,
+    fairShare: Math.round(100/(G.agents.length+1))};
+}
+function transcriptText(){
+  return G.turns.map(t => `${t.id === "you" ? t.name + " (CANDIDATE)" : t.name}${t.cut ? " [cut off]" : ""}: ${t.text}`).join("\n");
+}
+let lastStats = null;
+async function evaluate(){
+  G.phase = "done"; stopSpeech();
+  show("eval"); $("evalErr").hidden = true; $("btnRetryEval").hidden = true;
+  const st = lastStats = computeStats();
+  if (st.turns === 0){ return renderResult({selected:false, overall:8,
+    verdict_line:`${S.name} did not speak during the discussion, so the panel had nothing to assess.`,
+    scores:{content:0,communication:0,initiative:0,listening:2,leadership:0,fluency:0},
+    strengths:["You stayed in the room and listened."],
+    improvements:["Enter in the first two minutes, even with one short point: 'I'd like to add one angle here…'","Use the moderator's open floor or an agent's invitation as your entry cue."],
+    better_phrases:[{you_said:"(silence)", try:"If I may come in here, I see this a little differently…"}], best_moment:""}, st); }
+  try {
+    const r = await api("/api/evaluate", {topic:S.topic.slice(0,200), name:S.name.slice(0,30), minutes:S.minutes,
+      agent_count:G.agents.length, transcript:turnsForApi(), stats:st});
+    renderResult(r, st);
+  } catch (e){
+    $("evalErr").hidden = false;
+    $("evalErr").textContent = e.code === "rate_limited" ? "Too many requests. Wait a bit, then try again."
+      : e.code === "bad_password" ? "The access password is wrong." : "The panel couldn't finish scoring (" + e.message + "). Try again.";
+    $("btnRetryEval").hidden = false;
+  }
+}
+$("btnRetryEval").onclick = evaluate;
+
+const LABELS = {content:"Content", communication:"Clarity", initiative:"Initiative", listening:"Listening", leadership:"Leadership", fluency:"Fluency"};
+function li(box, items){ box.innerHTML = ""; (items || []).forEach(x => { const l = document.createElement("li"); l.textContent = String(x); box.append(l); }); if (!box.children.length){ const l = document.createElement("li"); l.textContent = "—"; box.append(l);} }
+function renderResult(r, st){
+  show("result");
+  $("resTopic").textContent = S.topic;
+  const yes = !!r.selected; const overall = Math.max(0, Math.min(100, Math.round(Number(r.overall) || 0)));
+  const v = $("verdict"); v.className = "verdict " + (yes ? "yes" : "no"); v.innerHTML = "";
+  const stamp = document.createElement("div"); stamp.className = "stamp"; stamp.textContent = yes ? "SELECTED" : "NOT SELECTED";
+  const sc = document.createElement("div"); sc.className = "score"; sc.textContent = `Overall ${overall}/100`;
+  const ln = document.createElement("div"); ln.className = "line"; ln.textContent = r.verdict_line || "";
+  v.append(stamp, sc, ln);
+  if (r.best_moment){ const b = document.createElement("div"); b.className = "line"; b.style.fontSize = "15px"; b.textContent = "Best line: “" + r.best_moment + "”"; v.append(b); }
+
+  const stats = [[st.turns,"Your turns"],[st.words,"Words spoken"],[st.airtime + "%","Airtime (fair " + st.fairShare + "%)"],
+    [st.fillers,"Filler words"],[st.repeats,"Repeated words"],[st.opened ? "Yes" : "No","Opened the GD"],[st.summarised ? "Yes" : "No","Summarised"]];
+  $("stats").innerHTML = "";
+  stats.forEach(([n,l]) => { const d = document.createElement("div"); d.className = "stat";
+    const a = document.createElement("div"); a.className = "v"; a.textContent = n;
+    const b = document.createElement("div"); b.className = "l"; b.textContent = l; d.append(a,b); $("stats").append(d); });
+
+  $("bars").innerHTML = "";
+  Object.keys(LABELS).forEach(k => {
+    const n = Math.max(0, Math.min(10, Number((r.scores || {})[k]) || 0));
+    const row = document.createElement("div"); row.className = "bar";
+    const l = document.createElement("span"); l.textContent = LABELS[k];
+    const tr = document.createElement("div"); tr.className = "track";
+    const f = document.createElement("div"); f.className = "fill" + (n < 4 ? " lo" : n < 6.5 ? " mid" : ""); f.style.width = (n*10) + "%"; tr.append(f);
+    const nn = document.createElement("span"); nn.className = "n"; nn.textContent = n;
+    row.append(l, tr, nn); $("bars").append(row);
+  });
+  li($("strengths"), r.strengths); li($("improve"), r.improvements);
+  const ph = $("phrases"); ph.innerHTML = "";
+  (r.better_phrases || []).forEach(p => {
+    const d = document.createElement("div");
+    const s = document.createElement("s"); s.textContent = "“" + (p.you_said || "") + "”";
+    const b = document.createElement("b"); b.textContent = "“" + (p.try || "") + "”";
+    d.append(s, document.createElement("br"), b); ph.append(d);
+  });
+  if (!ph.children.length) ph.textContent = "—";
+  const rm = $("resMsgs"); rm.innerHTML = "";
+  G.turns.forEach(t => {
+    const p = t.id === "you" ? YOU : t.id === "mod" ? MOD : AGENTS.find(a => a.id === t.id);
+    addMsg(p, t.text, {box:rm, cut:t.cut});
+  });
+  rm.scrollTop = 0;
+  saveHistory({d:new Date().toISOString().slice(0,10), topic:S.topic, overall, yes});
+}
+$("btnCopy").onclick = async () => {
+  const txt = `GD topic: ${S.topic}\n\n` + transcriptText();
+  try { await navigator.clipboard.writeText(txt); $("btnCopy").textContent = "Copied"; }
+  catch { $("btnCopy").textContent = "Copy blocked: select the text below"; }
+  setTimeout(() => $("btnCopy").textContent = "Copy transcript", 2500);
+};
+
+/* ---------- History (this browser only) ---------- */
+function getHistory(){ try { return JSON.parse(localStorage.getItem("gdroom.history") || "[]"); } catch { return []; } }
+function saveHistory(h){ try { const a = getHistory(); a.unshift(h); localStorage.setItem("gdroom.history", JSON.stringify(a.slice(0,8))); } catch {} }
+function renderHistory(){
+  const a = getHistory(); $("histWrap").hidden = !a.length; const box = $("hist"); box.innerHTML = "";
+  a.forEach(h => { const d = document.createElement("div");
+    const t = document.createElement("span"); t.textContent = h.d + " · " + h.topic;
+    const s = document.createElement("span"); s.style.fontWeight = "700"; s.style.color = h.yes ? "var(--good)" : "var(--bad)";
+    s.textContent = (h.yes ? "Selected " : "Not selected ") + h.overall; d.append(t, s); box.append(d); });
+}
+})();
+</script>
+</body>
+</html>
